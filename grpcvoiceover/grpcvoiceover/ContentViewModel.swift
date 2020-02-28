@@ -9,42 +9,73 @@
 import GRPC
 import NIO
 import Combine
+import Foundation
 
 final class ContentViewModel: ObservableObject {
+    @Published(initialValue: false) var isExecuting: Bool
+    @Published(initialValue: "") var comment: String
+
     func subscribe() {
-        // See: https://github.com/apple/swift-nio#eventloops-and-eventloopgroups
-        let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
-
-        // Make sure the group is shutdown when we're done with it.
-        defer {
-            try! group.syncShutdownGracefully()
+        guard self.isExecuting == false else {
+            print("already started")
+            return
         }
 
-        // Provide some basic configuration for the connection, in this case we connect to an endpoint on
-        // localhost at the given port.
-        let configuration = ClientConnection.Configuration(
-            target: .hostAndPort("10.36.27.215", 8080),
-            eventLoopGroup: group
-        )
+        start()
+        DispatchQueue.global().async {
+            do {
+                // See: https://github.com/apple/swift-nio#eventloops-and-eventloopgroups
+                let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
 
-        // Create a connection using the configuration.
-        let connection = ClientConnection(configuration: configuration)
+                // Make sure the group is shutdown when we're done with it.
+                defer {
+                    try! group.syncShutdownGracefully()
+                }
 
-        // Provide the connection to the generated client.
-        let client = Comment_CommentServiceServiceClient(channel: connection)
+                // Provide some basic configuration for the connection, in this case we connect to an endpoint on
+                // localhost at the given port.
+                let configuration = ClientConnection.Configuration(
+                    target: .hostAndPort("10.36.27.215", 8080),
+                    eventLoopGroup: group
+                )
 
-        let req = Comment_Filter.with {
-            $0.query = "test query"
+                // Create a connection using the configuration.
+                let connection = ClientConnection(configuration: configuration)
+
+                // Provide the connection to the generated client.
+                let client = Comment_CommentServiceServiceClient(channel: connection)
+
+                let req = Comment_Filter.with {
+                    $0.query = "test query"
+                }
+
+                let call = client.getComment(req) { comment in
+                    print(comment)
+                    self.setComment(comment.value)
+                }
+
+                let status = try call.status.recover { _ in .processingError }.wait()
+                if status.code != .ok {
+                    print("PRC failed: \(status)")
+                }
+            } catch {
+                print(error)
+                self.finish()
+            }
         }
+    }
 
-        let call = client.getComment(req) { comment in
-            print(comment)
+    func start() {
+        isExecuting = true
+    }
+
+    func finish() {
+        isExecuting = false
+    }
+
+    private func setComment(_ comment: String) {
+        DispatchQueue.main.async {
+            self.comment = comment
         }
-
-        let status = try! call.status.recover { _ in .processingError }.wait()
-        if status.code != .ok {
-            print("PRC failed: \(status)")
-        }
-
     }
 }

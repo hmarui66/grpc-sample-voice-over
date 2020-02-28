@@ -2,11 +2,20 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"flag"
 	"fmt"
+	"grpc-go/status"
 	"log"
 	"net"
 	"os"
+	"time"
+
+	"google.golang.org/grpc/codes"
+
+	"github.com/grpc-ecosystem/go-grpc-middleware"
+	"github.com/grpc-ecosystem/go-grpc-middleware/recovery"
+	"github.com/grpc-ecosystem/go-grpc-middleware/validator"
 
 	pb "github.com/hmarui66/grpc-sample-voice-over/proto"
 	"google.golang.org/grpc"
@@ -78,10 +87,52 @@ func main() {
 		}
 		opts = []grpc.ServerOption{grpc.Creds(creds)}
 	}
+
+	opts = append(opts,
+		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
+			grpc_recovery.StreamServerInterceptor(),
+			grpc_validator.StreamServerInterceptor(),
+		)),
+		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
+			func(
+				ctx context.Context, req interface{},
+				info *grpc.UnaryServerInfo, handler grpc.UnaryHandler,
+			) (interface{}, error) {
+				startTime := time.Now()
+
+				resp, err := handler(ctx, req)
+
+				duration := time.Since(startTime)
+
+				code := codes.Unknown
+				if sts, ok := status.FromError(err); ok {
+					code = sts.Code()
+				}
+
+				var fn func(format string, args ...interface{})
+				if err != nil {
+					fn = func(format string, args ...interface{}) {
+						log.Printf(format+`, error="%s"`, append(args, err)...)
+					}
+				}
+
+				fn("method = %s, code = %s, duration: %0.4fms", info.FullMethod, code, toMilliseconds(duration))
+
+				return resp, err
+			},
+			grpc_validator.UnaryServerInterceptor(),
+		)))
+
 	grpcServer := grpc.NewServer(opts...)
 	pb.RegisterCommentServiceServer(grpcServer, newServer())
 
 	if err := grpcServer.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
+}
+
+func toMilliseconds(d time.Duration) float64 {
+	msec := d / time.Millisecond
+	nsec := d % time.Millisecond
+	return float64(msec) + float64(nsec)/1e6
 }

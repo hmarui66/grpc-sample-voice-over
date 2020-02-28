@@ -12,7 +12,7 @@ struct ContentView: View {
     @ObservedObject(initialValue: ContentViewModel()) var vm: ContentViewModel
     var body: some View {
         HStack {
-            Text("Hello, World!")
+            Text(self.vm.comment)
             Button(action: {
                 self.vm.subscribe()
             }) {
