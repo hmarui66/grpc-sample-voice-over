@@ -2,9 +2,23 @@
 
 ## Start servers
 
-```fish
-set -x SLACK_VERIFICATION_TOKEN [TOKEN] & go run server/*.go
+```bash
+# bash
+export SLACK_VERIFICATION_TOKEN=[TOKEN]; export GRPC_PASSWORD=[PASSWORD]; go run server/*.go
+# fisn
+set -x SLACK_VERIFICATION_TOKEN [TOKEN] & set -x GRPC_PASSWORD=[PASSWORD] & go run server/*.go
 ```
+
+## Run test client
+
+```bash
+# bash
+export GRPC_PASSWORD=[PASSWORD]; go run client/*.go
+# fisn
+set -x GRPC_PASSWORD [PASSWORD] & go run client/*.go
+
+```
+
 
 ## For Swift protoc
 
@@ -20,6 +34,6 @@ reference: https://github.com/grpc/grpc-swift/tree/nio#getting-the-protoc-plugin
 
 ## For Slack Event Subscriptions
 
-1. install ngrok application
-2. run ngrok with port specified `ngrok http 3000`
-3. register Slack Event Subscriptions at `https://api.slack.com/apps/***/event-subscriptions?`
+1. Install ngrok application
+2. Run ngrok with port specified `ngrok http 3000`
+3. Register [Slack Event Subscriptions](https://api.slack.com/apps/***/event-subscriptions) and retrieve `Verification Token`
