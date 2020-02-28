@@ -1,11 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
-	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
+
+	"github.com/slack-go/slack/slackevents"
 )
 
 func startSlackServer() {
@@ -18,57 +20,65 @@ func startSlackServer() {
 }
 
 func handleSlack(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusBadRequest)
-		log.Println(`get method is not allowed`)
-		return
+	log.Println("start handle slack message")
+	buf := new(bytes.Buffer)
+	if _, err := buf.ReadFrom(r.Body); err != nil {
+		log.Printf("failed to read from request body: %#v", err)
 	}
-	defer closeCloser(r.Body)
-
-	body, err := ioutil.ReadAll(r.Body)
+	body := buf.String()
+	eventsAPIEvent, err := slackevents.ParseEvent(
+		json.RawMessage(body),
+		slackevents.OptionVerifyToken(&slackevents.TokenComparator{VerificationToken: os.Getenv(`SLACK_VERIFICATION_TOKEN`)}),
+	)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Printf("failed to parse event: %#v", err)
 		return
 	}
-	var data map[string]interface{}
-	if err := json.Unmarshal(body, &data); err != nil {
-		fmt.Println(err)
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	fmt.Println(data)
 
-	switch data["type"].(string) {
-	case "url_verification":
-		if challenge, ok := data["challenge"].(string); !ok {
-			w.WriteHeader(http.StatusBadRequest)
-			if _, err := w.Write([]byte("challenge required at url verification")); err != nil {
-				log.Printf("failed to write challenge response: %#v", err)
-			}
-		} else {
-			if _, err := w.Write([]byte(challenge)); err != nil {
-				log.Printf("failed to write challenge response: %#v", err)
-				w.WriteHeader(http.StatusServiceUnavailable)
-			} else {
-				w.WriteHeader(http.StatusOK)
-			}
+	switch eventsAPIEvent.Type {
+	case slackevents.URLVerification:
+		var r *slackevents.ChallengeResponse
+		err := json.Unmarshal([]byte(body), &r)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
 		}
-	case "event_callback":
-		event, ok := data[`event`].(map[string]interface{})
-		if !ok {
-			w.WriteHeader(http.StatusBadRequest)
-			log.Println(`failed to cast event to byte array`)
-			return
+		w.Header().Set("Content-Type", "text")
+		if _, err := w.Write([]byte(r.Challenge)); err != nil {
+			log.Printf("failed to write challenge response: %#v", err)
 		}
-		w.WriteHeader(http.StatusOK)
-		putComment(event)
+	case slackevents.CallbackEvent:
+		innerEvent := eventsAPIEvent.InnerEvent
+		switch ev := innerEvent.Data.(type) {
+		case *slackevents.AppMentionEvent:
+			putAppMentionEvent(ev)
+		case *slackevents.MessageEvent:
+			putMessageEvent(ev)
+		default:
+			log.Printf("unhandled callback event %#v", ev)
+		}
 	default:
-		w.WriteHeader(http.StatusBadRequest)
-		log.Println(`bad request`)
+		log.Printf("unhandled event: %#v", eventsAPIEvent)
 	}
+
 }
 
-func putComment(event map[string]interface{}) {
-	fmt.Sprintf("%+v", event)
+func putAppMentionEvent(ev *slackevents.AppMentionEvent) {
+	if ignoreMessage(ev.Text) {
+		return
+	}
+	log.Printf("%+v", ev.Text)
+	commentCh <- ev.Text
+}
 
+func putMessageEvent(ev *slackevents.MessageEvent) {
+	if ignoreMessage(ev.Text) {
+		return
+	}
+	log.Printf("%+v", ev.Text)
+	commentCh <- ev.Text
+}
+
+func ignoreMessage(msg string) bool {
+	return msg == "This content can't be displayed."
 }

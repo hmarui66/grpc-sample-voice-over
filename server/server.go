@@ -5,11 +5,12 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"grpc-go/status"
 	"log"
 	"net"
 	"os"
 	"time"
+
+	"google.golang.org/grpc/status"
 
 	"google.golang.org/grpc/codes"
 

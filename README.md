@@ -1,5 +1,11 @@
 # grpc-sample-voice-over
 
+## Start servers
+
+```fish
+set -x SLACK_VERIFICATION_TOKEN [TOKEN] & go run server/*.go
+```
+
 ## For Swift protoc
 
 at root directory of [grpc-swift](https://github.com/grpc/grpc-swift)
