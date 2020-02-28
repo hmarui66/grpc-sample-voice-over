@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package comment;
+
+service CommentService {
+    rpc GetComment(Filter) returns (stream Comment) {}
+}
+
+message Filter {
+    string query = 1;
+}
+
+message Comment {
+    string id = 1;
+    string value = 2;
+}
