@@ -8,9 +8,10 @@ import (
 	"log"
 	"time"
 
+	"github.com/golang/go/src/os"
+
 	pb "github.com/hmarui66/grpc-sample-voice-over/proto"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/testdata"
 )
 
@@ -64,11 +65,11 @@ func main() {
 		if *caFile == "" {
 			*caFile = testdata.Path("ca.pem")
 		}
-		creds, err := credentials.NewClientTLSFromFile(*caFile, *serverHostOverride)
+		creds, err := newPasswordCompositeCredentials(os.Getenv(`GRPC_PASSWORD`), *caFile, *serverHostOverride)
 		if err != nil {
-			log.Fatalf("failed to create TLS credentials %v", err)
+			log.Fatalf("failed to create password composite credentials %v", err)
 		}
-		opts = append(opts, grpc.WithTransportCredentials(creds))
+		opts = append(opts, grpc.WithCredentialsBundle(creds))
 	} else {
 		opts = append(opts, grpc.WithInsecure())
 	}

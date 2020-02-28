@@ -5,11 +5,12 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"grpc-go/status"
 	"log"
 	"net"
 	"os"
 	"time"
+
+	"google.golang.org/grpc/status"
 
 	"google.golang.org/grpc/codes"
 
@@ -28,34 +29,35 @@ var (
 	certFile = flag.String("cert_file", "", "The TLS cert file")
 	keyFile  = flag.String("key_file", "", "The TLS key file")
 	port     = flag.Int("port", 8080, "The server port")
+
+	commentCh chan string
 )
 
-type CommentServer struct {
-	commentCh chan string
+func init() {
+	commentCh = make(chan string)
 }
 
+type CommentServer struct{}
+
 func newServer() *CommentServer {
-	s := &CommentServer{
-		commentCh: make(chan string),
-	}
-	s.startScan()
+	s := &CommentServer{}
+	go s.startScan()
 
 	return s
 }
 
 func (s *CommentServer) startScan() {
-	go func() {
-		scanner := bufio.NewScanner(os.Stdin)
-		for scanner.Scan() {
-			s.commentCh <- scanner.Text()
-		}
-	}()
+	log.Printf("starting stdin scanner...\n")
+	scanner := bufio.NewScanner(os.Stdin)
+	for scanner.Scan() {
+		commentCh <- scanner.Text()
+	}
 }
 
 func (s *CommentServer) GetComment(req *pb.Filter, stream pb.CommentService_GetCommentServer) error {
 	dummyID := 0
 	for {
-		c := <-s.commentCh
+		c := <-commentCh
 		dummyID += 1
 		if err := stream.Send(&pb.Comment{
 			Id:    string(dummyID),
@@ -68,6 +70,8 @@ func (s *CommentServer) GetComment(req *pb.Filter, stream pb.CommentService_GetC
 
 func main() {
 	flag.Parse()
+
+	go startSlackServer()
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", *port))
 	if err != nil {
@@ -126,6 +130,7 @@ func main() {
 	grpcServer := grpc.NewServer(opts...)
 	pb.RegisterCommentServiceServer(grpcServer, newServer())
 
+	log.Printf("starting grpc server...\n")
 	if err := grpcServer.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}

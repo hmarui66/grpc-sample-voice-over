@@ -64,6 +64,7 @@ final class ContentViewModel: ObservableObject {
                 let status = try call.status.recover { _ in .processingError }.wait()
                 if status.code != .ok {
                     print("PRC failed: \(status)")
+                    self.finish()
                 }
             } catch {
                 print(error)
@@ -86,7 +87,7 @@ final class ContentViewModel: ObservableObject {
         }
         let utterance = AVSpeechUtterance(string: comment.value)
         utterance.voice = AVSpeechSynthesisVoice(language: "ja-JP")
-        utterance.rate = 0.5
+        utterance.rate = 0.7
         utterance.pitchMultiplier = 0.5
         self.speechSynthesizer.speak(utterance)
     }
