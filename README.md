@@ -12,3 +12,8 @@ sudo cp protoc-gen-swift protoc-gen-grpc-swift /usr/local/bin
 
 reference: https://github.com/grpc/grpc-swift/tree/nio#getting-the-protoc-plugins
 
+## For Slack Event Subscriptions
+
+1. install ngrok application
+2. run ngrok with port specified `ngrok http 3000`
+3. register Slack Event Subscriptions at `https://api.slack.com/apps/***/event-subscriptions?`
