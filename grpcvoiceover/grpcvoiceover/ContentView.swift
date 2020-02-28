@@ -9,8 +9,16 @@
 import SwiftUI
 
 struct ContentView: View {
+    @ObservedObject(initialValue: ContentViewModel()) var vm: ContentViewModel
     var body: some View {
-        Text("Hello, World!")
+        HStack {
+            Text("Hello, World!")
+            Button(action: {
+                self.vm.subscribe()
+            }) {
+                Text("subscribe")
+            }
+        }
     }
 }
 
