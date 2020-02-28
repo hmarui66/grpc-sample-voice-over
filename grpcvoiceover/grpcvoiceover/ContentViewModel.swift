@@ -10,10 +10,17 @@ import GRPC
 import NIO
 import Combine
 import Foundation
+import AVFoundation
 
 final class ContentViewModel: ObservableObject {
     @Published(initialValue: false) var isExecuting: Bool
     @Published(initialValue: "") var comment: String
+
+    private let speechSynthesizer : AVSpeechSynthesizer
+
+    init() {
+        self.speechSynthesizer = AVSpeechSynthesizer()
+    }
 
     func subscribe() {
         guard self.isExecuting == false else {
@@ -51,7 +58,7 @@ final class ContentViewModel: ObservableObject {
 
                 let call = client.getComment(req) { comment in
                     print(comment)
-                    self.setComment(comment.value)
+                    self.setComment(comment)
                 }
 
                 let status = try call.status.recover { _ in .processingError }.wait()
@@ -73,9 +80,14 @@ final class ContentViewModel: ObservableObject {
         isExecuting = false
     }
 
-    private func setComment(_ comment: String) {
+    private func setComment(_ comment: Comment_Comment) {
         DispatchQueue.main.async {
-            self.comment = comment
+            self.comment = comment.value
         }
+        let utterance = AVSpeechUtterance(string: comment.value)
+        utterance.voice = AVSpeechSynthesisVoice(language: "ja-JP")
+        utterance.rate = 0.5
+        utterance.pitchMultiplier = 0.5
+        self.speechSynthesizer.speak(utterance)
     }
 }
