@@ -12,8 +12,6 @@ import (
 	"github.com/satori/go.uuid"
 
 	"github.com/grpc-ecosystem/go-grpc-middleware"
-	"github.com/grpc-ecosystem/go-grpc-middleware/recovery"
-	"github.com/grpc-ecosystem/go-grpc-middleware/validator"
 	pb "github.com/hmarui66/grpc-sample-voice-over/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -29,11 +27,11 @@ var (
 	port     = flag.Int("port", 8080, "The server port")
 	token    = flag.String("token", "foo", "Token to call a procedure")
 
-	commentCh *channels
+	clients *clientsManager
 )
 
 func init() {
-	commentCh = newChannels()
+	clients = newClientsManager()
 }
 
 type CommentServer struct{}
@@ -49,7 +47,7 @@ func (s *CommentServer) startScan() {
 	log.Printf("starting stdin scanner...\n")
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
-		commentCh.pushMsg(&message{
+		clients.pushMsg(&comment{
 			Type:      "NONE",
 			User:      "gRPC-SERVER",
 			Text:      scanner.Text(),
@@ -61,8 +59,8 @@ func (s *CommentServer) startScan() {
 
 func (s *CommentServer) GetComment(req *pb.Filter, stream pb.CommentService_GetCommentServer) error {
 	id := uuid.NewV4()
-	ch := commentCh.add(id.String())
-	defer commentCh.delete(id.String())
+	ch := clients.add(id.String())
+	defer clients.delete(id.String())
 
 	for {
 		c := <-ch
@@ -76,6 +74,28 @@ func (s *CommentServer) GetComment(req *pb.Filter, stream pb.CommentService_GetC
 			return status.Errorf(codes.Unknown, "failed to send a comment: %v", err)
 		}
 	}
+}
+
+func streamAccessLogHandler(
+	srv interface{},
+	ss grpc.ServerStream,
+	info *grpc.StreamServerInfo,
+	handler grpc.StreamHandler,
+) error {
+	start := time.Now()
+	log.Printf("%s", info.FullMethod)
+	err := handler(srv, ss)
+	sts := status.Convert(err)
+
+	log.Printf("%s [duration: %d][status: %s] %s %v",
+		info.FullMethod,
+		time.Since(start).Nanoseconds()/int64(time.Millisecond),
+		sts.Code(),
+		sts.Message(),
+		sts.Details(),
+	)
+
+	return err
 }
 
 func main() {
@@ -104,14 +124,10 @@ func main() {
 
 	opts = append(opts,
 		grpc_middleware.WithStreamServerChain(
-			grpc_recovery.StreamServerInterceptor(),
-			grpc_validator.StreamServerInterceptor(),
+			streamAccessLogHandler,
 			//grpc_auth.StreamServerInterceptor(authFunc),
 		),
-		grpc_middleware.WithUnaryServerChain(
-			grpc_validator.UnaryServerInterceptor(),
-			//grpc_auth.UnaryServerInterceptor(authFunc),
-		))
+	)
 
 	grpcServer := grpc.NewServer(opts...)
 	pb.RegisterCommentServiceServer(grpcServer, newServer())

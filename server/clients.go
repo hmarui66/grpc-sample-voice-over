@@ -7,11 +7,11 @@ import (
 )
 
 type (
-	channels struct {
+	clientsManager struct {
 		sync.Mutex
-		chans map[string]chan *message
+		chans map[string]chan *comment
 	}
-	message struct {
+	comment struct {
 		Type      string
 		User      string
 		Text      string
@@ -20,23 +20,23 @@ type (
 	}
 )
 
-func newChannels() *channels {
-	return &channels{
-		chans: make(map[string]chan *message),
+func newClientsManager() *clientsManager {
+	return &clientsManager{
+		chans: make(map[string]chan *comment),
 	}
 }
 
-func (c *channels) add(key string) <-chan *message {
+func (c *clientsManager) add(key string) <-chan *comment {
 	log.Printf("add channel: %s", key)
 	c.Lock()
 	defer c.Unlock()
-	ch := make(chan *message, 1000)
+	ch := make(chan *comment, 1000)
 	c.chans[key] = ch
 
 	return ch
 }
 
-func (c *channels) delete(key string) {
+func (c *clientsManager) delete(key string) {
 	go func() {
 		c.Lock()
 		defer c.Unlock()
@@ -50,7 +50,7 @@ func (c *channels) delete(key string) {
 	}()
 }
 
-func (c *channels) pushMsg(msg *message) {
+func (c *clientsManager) pushMsg(msg *comment) {
 	if msg == nil {
 		return
 	}

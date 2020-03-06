@@ -22,7 +22,7 @@ func startSlackServer() {
 }
 
 func handleSlack(w http.ResponseWriter, r *http.Request) {
-	log.Println("start handle slack message")
+	log.Println("start handle slack comment")
 	buf := new(bytes.Buffer)
 	if _, err := buf.ReadFrom(r.Body); err != nil {
 		log.Printf("failed to read from request body: %#v", err)
@@ -71,7 +71,7 @@ func putAppMentionEvent(ev *slackevents.AppMentionEvent) {
 		return
 	}
 	log.Printf("%+v", ev.Text)
-	commentCh.pushMsg(&message{
+	clients.pushMsg(&comment{
 		Type:      ev.Type,
 		User:      ev.User,
 		Text:      text,
@@ -86,7 +86,7 @@ func putMessageEvent(ev *slackevents.MessageEvent) {
 		return
 	}
 	log.Printf("%+v", ev.Text)
-	commentCh.pushMsg(&message{
+	clients.pushMsg(&comment{
 		Type:      ev.Type,
 		User:      ev.User,
 		Text:      text,
