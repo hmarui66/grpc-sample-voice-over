@@ -4,21 +4,16 @@
 
 ```bash
 # bash
-export SLACK_VERIFICATION_TOKEN=[TOKEN]; export GRPC_PASSWORD=[PASSWORD]; go run server/*.go
+export SLACK_VERIFICATION_TOKEN=[TOKEN]; go run server/*.go -token foo
 # fisn
-set -x SLACK_VERIFICATION_TOKEN [TOKEN] & set -x GRPC_PASSWORD=[PASSWORD] & go run server/*.go
+set -x SLACK_VERIFICATION_TOKEN [TOKEN] & go run server/*.go -token foo
 ```
 
 ## Run test client
 
 ```bash
-# bash
-export GRPC_PASSWORD=[PASSWORD]; go run client/*.go
-# fisn
-set -x GRPC_PASSWORD [PASSWORD] & go run client/*.go
-
+go run client/*.go -token foo
 ```
-
 
 ## For Swift protoc
 
