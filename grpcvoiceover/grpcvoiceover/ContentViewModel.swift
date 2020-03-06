@@ -47,7 +47,8 @@ final class ContentViewModel: ObservableObject {
 
                 let tls = ClientConnection.Configuration.TLS(
                     certificateChain: certificates.map { .certificate($0) },
-                    certificateVerification: .none,
+                    trustRoots: NIOSSLTrustRoots.certificates(certificates),
+                    certificateVerification: .fullVerification,
                     hostnameOverride: "x.test.youtube.com"
                 )
 
