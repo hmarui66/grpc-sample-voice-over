@@ -104,7 +104,16 @@ final class ContentViewModel: ObservableObject {
         let utterance = AVSpeechUtterance(string: comment.text)
         utterance.voice = AVSpeechSynthesisVoice(language: "ja-JP")
         utterance.rate = 0.7
-        utterance.pitchMultiplier = 0.5
+        utterance.pitchMultiplier = getPitch(comment.user)
         self.speechSynthesizer.speak(utterance)
+    }
+
+    private func getPitch(_ user: String) -> Float {
+        let num = Array(user.utf8).reduce(0, { x,y in
+            x + Float(y)
+        })
+        let pitch = num.truncatingRemainder(dividingBy: 20.0) / 10
+        print(pitch)
+        return pitch < 0.5 ? pitch + 0.5 : pitch
     }
 }

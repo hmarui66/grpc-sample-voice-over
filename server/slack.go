@@ -6,6 +6,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"regexp"
+	"strings"
 
 	"github.com/slack-go/slack/slackevents"
 )
@@ -64,7 +66,8 @@ func handleSlack(w http.ResponseWriter, r *http.Request) {
 }
 
 func putAppMentionEvent(ev *slackevents.AppMentionEvent) {
-	if ignoreMessage(ev.Text) {
+	text := removeUnneccesaryParts(ev.Text)
+	if text == "" {
 		return
 	}
 	log.Printf("%+v", ev.Text)
@@ -78,7 +81,8 @@ func putAppMentionEvent(ev *slackevents.AppMentionEvent) {
 }
 
 func putMessageEvent(ev *slackevents.MessageEvent) {
-	if ignoreMessage(ev.Text) {
+	text := removeUnneccesaryParts(ev.Text)
+	if text == "" {
 		return
 	}
 	log.Printf("%+v", ev.Text)
@@ -91,6 +95,15 @@ func putMessageEvent(ev *slackevents.MessageEvent) {
 	})
 }
 
+var mentionReg = regexp.MustCompile(`<@[a-zA-Z0-9]*>`)
+
+func removeUnneccesaryParts(msg string) string {
+	if ignoreMessage(msg) {
+		return ""
+	}
+	return mentionReg.ReplaceAllString(msg, "")
+}
+
 func ignoreMessage(msg string) bool {
-	return msg == "This content can't be displayed."
+	return msg == "This content can't be displayed." || len(strings.TrimSpace(msg)) == 0
 }
