@@ -8,6 +8,9 @@ import (
 	"log"
 	"net"
 	"os"
+	"time"
+
+	"github.com/satori/go.uuid"
 
 	"github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/grpc-ecosystem/go-grpc-middleware/auth"
@@ -28,11 +31,11 @@ var (
 	port     = flag.Int("port", 8080, "The server port")
 	token    = flag.String("token", "foo", "Token to call a procedure")
 
-	commentCh chan string
+	commentCh *channels
 )
 
 func init() {
-	commentCh = make(chan string)
+	commentCh = newChannels()
 }
 
 type CommentServer struct{}
@@ -48,18 +51,29 @@ func (s *CommentServer) startScan() {
 	log.Printf("starting stdin scanner...\n")
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
-		commentCh <- scanner.Text()
+		commentCh.pushMsg(&message{
+			Type:      "NONE",
+			User:      "gRPC-SERVER",
+			Text:      scanner.Text(),
+			Timestamp: time.Now().String(),
+			Channel:   "NONE",
+		})
 	}
 }
 
 func (s *CommentServer) GetComment(req *pb.Filter, stream pb.CommentService_GetCommentServer) error {
-	dummyID := 0
+	id := uuid.NewV4()
+	ch := commentCh.add(id.String())
+	defer commentCh.delete(id.String())
+
 	for {
-		c := <-commentCh
-		dummyID += 1
+		c := <-ch
 		if err := stream.Send(&pb.Comment{
-			Id:    string(dummyID),
-			Value: c,
+			Type:      c.Type,
+			User:      c.User,
+			Text:      c.Text,
+			Timestamp: c.Timestamp,
+			Channel:   c.Channel,
 		}); err != nil {
 			return status.Errorf(codes.Unknown, "failed to send a comment: %v", err)
 		}

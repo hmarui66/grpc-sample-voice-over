@@ -36,9 +36,15 @@ struct Comment_Comment {
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
-  var id: String = String()
+  var type: String = String()
 
-  var value: String = String()
+  var user: String = String()
+
+  var text: String = String()
+
+  var timestamp: String = String()
+
+  var channel: String = String()
 
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
@@ -81,33 +87,51 @@ extension Comment_Filter: SwiftProtobuf.Message, SwiftProtobuf._MessageImplement
 extension Comment_Comment: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".Comment"
   static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
-    1: .same(proto: "id"),
-    2: .same(proto: "value"),
+    1: .same(proto: "type"),
+    2: .same(proto: "user"),
+    3: .same(proto: "text"),
+    4: .same(proto: "timestamp"),
+    5: .same(proto: "channel"),
   ]
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
       switch fieldNumber {
-      case 1: try decoder.decodeSingularStringField(value: &self.id)
-      case 2: try decoder.decodeSingularStringField(value: &self.value)
+      case 1: try decoder.decodeSingularStringField(value: &self.type)
+      case 2: try decoder.decodeSingularStringField(value: &self.user)
+      case 3: try decoder.decodeSingularStringField(value: &self.text)
+      case 4: try decoder.decodeSingularStringField(value: &self.timestamp)
+      case 5: try decoder.decodeSingularStringField(value: &self.channel)
       default: break
       }
     }
   }
 
   func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    if !self.id.isEmpty {
-      try visitor.visitSingularStringField(value: self.id, fieldNumber: 1)
+    if !self.type.isEmpty {
+      try visitor.visitSingularStringField(value: self.type, fieldNumber: 1)
     }
-    if !self.value.isEmpty {
-      try visitor.visitSingularStringField(value: self.value, fieldNumber: 2)
+    if !self.user.isEmpty {
+      try visitor.visitSingularStringField(value: self.user, fieldNumber: 2)
+    }
+    if !self.text.isEmpty {
+      try visitor.visitSingularStringField(value: self.text, fieldNumber: 3)
+    }
+    if !self.timestamp.isEmpty {
+      try visitor.visitSingularStringField(value: self.timestamp, fieldNumber: 4)
+    }
+    if !self.channel.isEmpty {
+      try visitor.visitSingularStringField(value: self.channel, fieldNumber: 5)
     }
     try unknownFields.traverse(visitor: &visitor)
   }
 
   static func ==(lhs: Comment_Comment, rhs: Comment_Comment) -> Bool {
-    if lhs.id != rhs.id {return false}
-    if lhs.value != rhs.value {return false}
+    if lhs.type != rhs.type {return false}
+    if lhs.user != rhs.user {return false}
+    if lhs.text != rhs.text {return false}
+    if lhs.timestamp != rhs.timestamp {return false}
+    if lhs.channel != rhs.channel {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

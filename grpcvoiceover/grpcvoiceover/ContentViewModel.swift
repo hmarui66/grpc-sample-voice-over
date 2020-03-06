@@ -42,7 +42,7 @@ final class ContentViewModel: ObservableObject {
                 // Provide some basic configuration for the connection, in this case we connect to an endpoint on
                 // localhost at the given port.
                 let configuration = ClientConnection.Configuration(
-                    target: .hostAndPort("10.36.27.215", 8080),
+                    target: .hostAndPort("10.36.27.54", 8080),
                     eventLoopGroup: group
                 )
 
@@ -74,18 +74,22 @@ final class ContentViewModel: ObservableObject {
     }
 
     func start() {
-        isExecuting = true
+        DispatchQueue.main.async {
+            self.isExecuting = true
+        }
     }
 
     func finish() {
-        isExecuting = false
+        DispatchQueue.main.async {
+            self.isExecuting = false
+        }
     }
 
     private func setComment(_ comment: Comment_Comment) {
         DispatchQueue.main.async {
-            self.comment = comment.value
+            self.comment = comment.text
         }
-        let utterance = AVSpeechUtterance(string: comment.value)
+        let utterance = AVSpeechUtterance(string: comment.text)
         utterance.voice = AVSpeechSynthesisVoice(language: "ja-JP")
         utterance.rate = 0.7
         utterance.pitchMultiplier = 0.5

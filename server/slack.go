@@ -68,7 +68,13 @@ func putAppMentionEvent(ev *slackevents.AppMentionEvent) {
 		return
 	}
 	log.Printf("%+v", ev.Text)
-	commentCh <- ev.Text
+	commentCh.pushMsg(&message{
+		Type:      ev.Type,
+		User:      ev.User,
+		Text:      ev.Text,
+		Timestamp: ev.TimeStamp,
+		Channel:   ev.Channel,
+	})
 }
 
 func putMessageEvent(ev *slackevents.MessageEvent) {
@@ -76,7 +82,13 @@ func putMessageEvent(ev *slackevents.MessageEvent) {
 		return
 	}
 	log.Printf("%+v", ev.Text)
-	commentCh <- ev.Text
+	commentCh.pushMsg(&message{
+		Type:      ev.Type,
+		User:      ev.User,
+		Text:      ev.Text,
+		Timestamp: ev.TimeStamp,
+		Channel:   ev.Channel,
+	})
 }
 
 func ignoreMessage(msg string) bool {
