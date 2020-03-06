@@ -8,18 +8,18 @@ import (
 	"log"
 	"time"
 
-	"github.com/golang/go/src/os"
-
 	pb "github.com/hmarui66/grpc-sample-voice-over/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/testdata"
 )
 
 var (
-	tls                = flag.Bool("tls", false, "Connection uses TLS if true, else plain TCP")
+	tls                = flag.Bool("tls", true, "Connection uses TLS if true, else plain TCP")
 	caFile             = flag.String("ca_file", "", "The file containing the CA root cert file")
 	serverAddr         = flag.String("server_addr", ":8080", "The server address in the format of host:port")
 	serverHostOverride = flag.String("server_host_override", "x.test.youtube.com", "The server name use to verify the hostname returned by TLS handshake")
+
+	token = flag.String("token", "foo", "Token to call a procedure")
 )
 
 func printComments(client pb.CommentServiceClient) error {
@@ -65,9 +65,9 @@ func main() {
 		if *caFile == "" {
 			*caFile = testdata.Path("ca.pem")
 		}
-		creds, err := newPasswordCompositeCredentials(os.Getenv(`GRPC_PASSWORD`), *caFile, *serverHostOverride)
+		creds, err := newCredentials(*token, *caFile, *serverHostOverride)
 		if err != nil {
-			log.Fatalf("failed to create password composite credentials %v", err)
+			log.Fatalf("failed to create token composite credentials %v", err)
 		}
 		opts = append(opts, grpc.WithCredentialsBundle(creds))
 	} else {

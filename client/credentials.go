@@ -10,17 +10,17 @@ import (
 var sslCred credentials.TransportCredentials
 
 type (
-	PasswordCompositeCredentials struct {
-		sslCred      credentials.TransportCredentials
-		passwordCred credentials.PerRPCCredentials
+	creds struct {
+		transportCreds credentials.TransportCredentials
+		perRPCCreds    credentials.PerRPCCredentials
 	}
-	PasswordCredentials struct {
-		password string
+	tokenCreds struct {
+		token string
 	}
 )
 
-func newPasswordCompositeCredentials(
-	password string,
+func newCredentials(
+	token string,
 	caFile string,
 	serverHostOverride string,
 ) (
@@ -34,32 +34,32 @@ func newPasswordCompositeCredentials(
 			return nil, fmt.Errorf("failed to new ssl credentials: %w", err)
 		}
 	}
-	return &PasswordCompositeCredentials{
-		sslCred: sslCred,
-		passwordCred: &PasswordCredentials{
-			password: password,
+	return &creds{
+		transportCreds: sslCred,
+		perRPCCreds: &tokenCreds{
+			token: token,
 		},
 	}, nil
 }
 
-func (b *PasswordCompositeCredentials) TransportCredentials() credentials.TransportCredentials {
-	return b.sslCred
+func (c *creds) TransportCredentials() credentials.TransportCredentials {
+	return c.transportCreds
 }
 
-func (b *PasswordCompositeCredentials) PerRPCCredentials() credentials.PerRPCCredentials {
-	return b.passwordCred
+func (c *creds) PerRPCCredentials() credentials.PerRPCCredentials {
+	return c.perRPCCreds
 }
 
-func (*PasswordCompositeCredentials) NewWithMode(mode string) (credentials.Bundle, error) {
-	panic("implement me")
+func (c *creds) NewWithMode(mode string) (credentials.Bundle, error) {
+	return c, nil
 }
 
-func (p *PasswordCredentials) GetRequestMetadata(ctx context.Context, uri ...string) (map[string]string, error) {
+func (t *tokenCreds) GetRequestMetadata(ctx context.Context, uri ...string) (map[string]string, error) {
 	return map[string]string{
-		"password": p.password,
+		"authorization": "bearer " + t.token,
 	}, nil
 }
 
-func (*PasswordCredentials) RequireTransportSecurity() bool {
+func (*tokenCreds) RequireTransportSecurity() bool {
 	return true
 }
