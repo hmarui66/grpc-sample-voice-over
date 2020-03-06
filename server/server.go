@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"context"
 	"flag"
 	"fmt"
 	"log"
@@ -13,7 +12,6 @@ import (
 	"github.com/satori/go.uuid"
 
 	"github.com/grpc-ecosystem/go-grpc-middleware"
-	"github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	"github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	"github.com/grpc-ecosystem/go-grpc-middleware/validator"
 	pb "github.com/hmarui66/grpc-sample-voice-over/proto"
@@ -108,11 +106,11 @@ func main() {
 		grpc_middleware.WithStreamServerChain(
 			grpc_recovery.StreamServerInterceptor(),
 			grpc_validator.StreamServerInterceptor(),
-			grpc_auth.StreamServerInterceptor(authFunc),
+			//grpc_auth.StreamServerInterceptor(authFunc),
 		),
 		grpc_middleware.WithUnaryServerChain(
 			grpc_validator.UnaryServerInterceptor(),
-			grpc_auth.UnaryServerInterceptor(authFunc),
+			//grpc_auth.UnaryServerInterceptor(authFunc),
 		))
 
 	grpcServer := grpc.NewServer(opts...)
@@ -124,14 +122,14 @@ func main() {
 	}
 }
 
-func authFunc(ctx context.Context) (context.Context, error) {
-	received, err := grpc_auth.AuthFromMD(ctx, "bearer")
-	if err != nil {
-		return nil, err
-	}
-	if received != *token {
-		return nil, status.Errorf(codes.Unauthenticated, "invalid token")
-	}
-	newCtx := context.WithValue(ctx, "result", "ok")
-	return newCtx, nil
-}
+//func authFunc(ctx context.Context) (context.Context, error) {
+//	received, err := grpc_auth.AuthFromMD(ctx, "bearer")
+//	if err != nil {
+//		return nil, err
+//	}
+//	if received != *token {
+//		return nil, status.Errorf(codes.Unauthenticated, "invalid token")
+//	}
+//	newCtx := context.WithValue(ctx, "result", "ok")
+//	return newCtx, nil
+//}

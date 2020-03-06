@@ -8,6 +8,7 @@
 
 import GRPC
 import NIO
+import NIOSSL
 import Combine
 import Foundation
 import AVFoundation
@@ -39,11 +40,22 @@ final class ContentViewModel: ObservableObject {
                     try! group.syncShutdownGracefully()
                 }
 
+                let path = Bundle.main.path(forResource: "ca", ofType: "pem")
+
+                let certificates: [NIOSSLCertificate] = try NIOSSLCertificate.fromPEMFile(path!)
+
+                let tls = ClientConnection.Configuration.TLS(
+                    certificateChain: certificates.map { .certificate($0) },
+                    certificateVerification: .none,
+                    hostnameOverride: "x.test.youtube.com"
+                )
+
                 // Provide some basic configuration for the connection, in this case we connect to an endpoint on
                 // localhost at the given port.
                 let configuration = ClientConnection.Configuration(
-                    target: .hostAndPort("10.36.27.54", 8080),
-                    eventLoopGroup: group
+                    target: .hostAndPort("10.36.27.189", 8080),
+                    eventLoopGroup: group,
+                    tls: tls
                 )
 
                 // Create a connection using the configuration.
