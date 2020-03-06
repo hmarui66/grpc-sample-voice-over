@@ -15,7 +15,7 @@ import AVFoundation
 
 final class ContentViewModel: ObservableObject {
     @Published(initialValue: false) var isExecuting: Bool
-    @Published(initialValue: "") var comment: String
+    @Published(initialValue: Comment_Comment()) var comment: Comment_Comment
 
     private let speechSynthesizer : AVSpeechSynthesizer
 
@@ -99,7 +99,7 @@ final class ContentViewModel: ObservableObject {
 
     private func setComment(_ comment: Comment_Comment) {
         DispatchQueue.main.async {
-            self.comment = comment.text
+            self.comment = comment
         }
         let utterance = AVSpeechUtterance(string: comment.text)
         utterance.voice = AVSpeechSynthesisVoice(language: "ja-JP")

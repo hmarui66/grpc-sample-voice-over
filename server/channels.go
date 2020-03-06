@@ -30,7 +30,7 @@ func (c *channels) add(key string) <-chan *message {
 	log.Printf("add channel: %s", key)
 	c.Lock()
 	defer c.Unlock()
-	ch := make(chan *message, 100)
+	ch := make(chan *message, 1000)
 	c.chans[key] = ch
 
 	return ch

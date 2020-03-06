@@ -53,9 +53,9 @@ func handleSlack(w http.ResponseWriter, r *http.Request) {
 		innerEvent := eventsAPIEvent.InnerEvent
 		switch ev := innerEvent.Data.(type) {
 		case *slackevents.AppMentionEvent:
-			putAppMentionEvent(ev)
+			go putAppMentionEvent(ev)
 		case *slackevents.MessageEvent:
-			putMessageEvent(ev)
+			go putMessageEvent(ev)
 		default:
 			log.Printf("unhandled callback event %#v", ev)
 		}
@@ -74,7 +74,7 @@ func putAppMentionEvent(ev *slackevents.AppMentionEvent) {
 	commentCh.pushMsg(&message{
 		Type:      ev.Type,
 		User:      ev.User,
-		Text:      ev.Text,
+		Text:      text,
 		Timestamp: ev.TimeStamp,
 		Channel:   ev.Channel,
 	})
@@ -89,7 +89,7 @@ func putMessageEvent(ev *slackevents.MessageEvent) {
 	commentCh.pushMsg(&message{
 		Type:      ev.Type,
 		User:      ev.User,
-		Text:      ev.Text,
+		Text:      text,
 		Timestamp: ev.TimeStamp,
 		Channel:   ev.Channel,
 	})
