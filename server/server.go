@@ -2,12 +2,15 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"flag"
 	"fmt"
 	"log"
 	"net"
 	"os"
 	"time"
+
+	"github.com/grpc-ecosystem/go-grpc-middleware/auth"
 
 	"github.com/satori/go.uuid"
 
@@ -83,11 +86,10 @@ func streamAccessLogHandler(
 	handler grpc.StreamHandler,
 ) error {
 	start := time.Now()
-	log.Printf("%s", info.FullMethod)
 	err := handler(srv, ss)
 	sts := status.Convert(err)
 
-	log.Printf("%s [duration: %d][status: %s] %s %v",
+	log.Printf("%s [duration: %d] - [status: %s] %s %v",
 		info.FullMethod,
 		time.Since(start).Nanoseconds()/int64(time.Millisecond),
 		sts.Code(),
@@ -125,7 +127,7 @@ func main() {
 	opts = append(opts,
 		grpc_middleware.WithStreamServerChain(
 			streamAccessLogHandler,
-			//grpc_auth.StreamServerInterceptor(authFunc),
+			grpc_auth.StreamServerInterceptor(authFunc),
 		),
 	)
 
@@ -138,14 +140,14 @@ func main() {
 	}
 }
 
-//func authFunc(ctx context.Context) (context.Context, error) {
-//	received, err := grpc_auth.AuthFromMD(ctx, "bearer")
-//	if err != nil {
-//		return nil, err
-//	}
-//	if received != *token {
-//		return nil, status.Errorf(codes.Unauthenticated, "invalid token")
-//	}
-//	newCtx := context.WithValue(ctx, "result", "ok")
-//	return newCtx, nil
-//}
+func authFunc(ctx context.Context) (context.Context, error) {
+	received, err := grpc_auth.AuthFromMD(ctx, "bearer")
+	if err != nil {
+		return nil, err
+	}
+	if received != *token {
+		return nil, status.Errorf(codes.Unauthenticated, "invalid token")
+	}
+	newCtx := context.WithValue(ctx, "result", "ok")
+	return newCtx, nil
+}

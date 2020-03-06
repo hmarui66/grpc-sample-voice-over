@@ -8,6 +8,7 @@
 
 import GRPC
 import NIO
+import NIOHPACK
 import NIOSSL
 import Combine
 import Foundation
@@ -23,7 +24,7 @@ final class ContentViewModel: ObservableObject {
         self.speechSynthesizer = AVSpeechSynthesizer()
     }
 
-    func subscribe() {
+    func subscribe(_ token: String) {
         guard self.isExecuting == false else {
             print("already started")
             return
@@ -53,7 +54,7 @@ final class ContentViewModel: ObservableObject {
                 // Provide some basic configuration for the connection, in this case we connect to an endpoint on
                 // localhost at the given port.
                 let configuration = ClientConnection.Configuration(
-                    target: .hostAndPort("10.36.27.189", 8080),
+                    target: .hostAndPort("localhost", 8080),
                     eventLoopGroup: group,
                     tls: tls
                 )
@@ -68,7 +69,10 @@ final class ContentViewModel: ObservableObject {
                     $0.query = "test query"
                 }
 
-                let call = client.getComment(req) { comment in
+                let headers: HPACKHeaders = ["authorization": "Bearer \(token)"]
+                let callOptions = CallOptions(customMetadata: headers)
+
+                let call = client.getComment(req, callOptions: callOptions) { comment in
                     print(comment)
                     self.setComment(comment)
                 }
